@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     This script automates the installation of Citrix VDA and optionally WEM on a remote Windows server.
-    It handles various scenarios including Windows Server 2012 compatibility, PrintNightmare vulnerability fix,
+    It handles various scenarios including Windows Server 2012 compatibility,
     and multiple installation attempts if necessary.
 
 .PARAMETER ServerName
@@ -19,18 +19,15 @@
 .PARAMETER InstallWEM
     Switch to indicate if WEM should be installed after VDA installation.
 
-.PARAMETER FixPrintNightmarePermissions
-    Switch to indicate if PrintNightmare vulnerability permissions should be fixed.
-
 .EXAMPLE
     .\Install-CitrixVDA.ps1 -ServerName "SERVER01" -SoftwareShareRoot "\\SHARE\CitrixInstall" -CloudConnectors "CC01 CC02"
 
     This example installs VDA on SERVER01 using the specified software share and Cloud Connectors.
 
 .EXAMPLE
-    .\Install-CitrixVDA.ps1 -ServerName "SERVER02" -SoftwareShareRoot "\\SHARE\CitrixInstall" -CloudConnectors "CC01 CC02" -InstallWEM -FixPrintNightmarePermissions
+    .\Install-CitrixVDA.ps1 -ServerName "SERVER02" -SoftwareShareRoot "\\SHARE\CitrixInstall" -CloudConnectors "CC01 CC02" -InstallWEM
 
-    This example installs both VDA and WEM on SERVER02, and also fixes PrintNightmare permissions.
+    This example installs both VDA and WEM on SERVER02.
 
 .NOTES
     File Name      : Install-VDA.ps1
@@ -58,10 +55,7 @@ param (
     [string]$CloudConnectors,
 
     [Parameter(HelpMessage="Install WEM after VDA installation")]
-    [switch]$InstallWEM = $false,
-
-    [Parameter(HelpMessage="Fix PrintNightmare permissions")]
-    [switch]$FixPrintNightmarePermissions = $false
+    [switch]$InstallWEM = $false
 )
 
 # Define paths for VDA and WEM installers
@@ -271,34 +265,6 @@ function Test-RemoteReboot {
     return $false
 }
 
-# Function to fix PrintNightmare permissions
-function Fix-PrintNightmare {
-    param (
-        [string]$RemoteServerName
-    )
-
-    $directoryPath = "C:\Windows\System32\spool\drivers"
-
-    $command = {
-        param (
-            [string]$directoryPath
-        )
-    
-        $icaclsCommand = "icacls `"$directoryPath`" /grant SYSTEM:(OI)(CI)F /T /Q"
-        $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $icaclsCommand" -Wait -NoNewWindow
-        return $process.ExitCode -eq 0
-    }
-
-    $result = Invoke-Command -ComputerName $RemoteServerName -ScriptBlock $command -ArgumentList $DirectoryPath
-
-    if ($result -eq 0) {
-        Write-Log "Printer driver permissions set successfully on $RemoteServerName"
-    } 
-    else {
-        Handle-Error "Failed to set permissions on $RemoteServerName"
-    }
-}
-
 # Function to install VDA
 function Install-VDA {
     param (
@@ -306,10 +272,6 @@ function Install-VDA {
         [string]$VDAInstallerPath,
         [string]$VDAArgs = $null
     )
-
-    if ($FixPrintNightmarePermissions) {
-        Fix-PrintNightmare -RemoteServerName $RemoteServerName
-    }
 
     if ($VDAArgs) {
         Write-Log "Starting VDA installation at $VDAInstallerPath on $RemoteServerName with arguments: $VDAArgs"
