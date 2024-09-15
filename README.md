@@ -19,7 +19,6 @@ This PowerShell script automates the installation of Citrix Virtual Delivery Age
 | SoftwareShareRoot | string | Root path of the software share on the network |
 | CloudConnectors | string | Space-separated list of Cloud Connectors for VDA installation |
 | InstallWEM | switch | (Optional) Install WEM after VDA installation |
-| FixPrintNightmarePermissions | switch | (Optional) Fix PrintNightmare permissions |
 
 ## Usage
 
